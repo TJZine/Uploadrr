@@ -394,7 +394,7 @@ async def do_the_thing(base_dir):
                 if meta['unattended']:
                     upload_to_tracker = True
                 else:
-                    upload_to_tracker = Confirm.ask(f"Upload to {tracker_class.tracker}? {debug}", choices=["y", "N"])
+                    upload_to_tracker = Confirm.ask(f"Upload to {tracker_class.tracker}? {debug}")
                 if upload_to_tracker:
                     console.print(f"Uploading to {tracker}")
                     if check_banned_group(tracker_class.tracker, tracker_class.banned_groups, meta, skipped_details, path):
