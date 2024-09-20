@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import argparse
 import urllib.parse
 import os
@@ -7,21 +6,21 @@ import traceback
 
 from src.console import console
 
-
 class Args():
     """
-    Parse Args
+    Class responsible for parsing command-line arguments and processing them into a usable format.
     """
     def __init__(self, config):
         self.config = config
-        pass
-    
 
-     
     def parse(self, args, meta):
-        input = args
+        oldArgs = args
+        """
+        Parse the command-line arguments and update the meta dictionary with the parsed values.
+        """
         parser = argparse.ArgumentParser()
 
+        # Define arguments with options and default values
         parser.add_argument('path', nargs='*', help="Path to file/directory")
         parser.add_argument('-fd', '--full-directory', dest='full_dir', action='store_true', required=False, help="Uploads Folder + ALL Content Within")
         parser.add_argument('-s', '--screens', type=int, required=False, help="Number of screenshots", default=int(self.config['DEFAULT']['screens']))
@@ -57,7 +56,7 @@ class Args():
         parser.add_argument('-siu', '--skip-imagehost-upload', dest='skip_imghost_upload', action='store_true', required=False, help="Skip Uploading to an image host")
         parser.add_argument('-th', '--torrenthash', nargs='*', required=False, help="Torrent Hash to re-use from your client's session directory")
         parser.add_argument('-nfo', '--nfo', action='store_true', required=False, help="Use .nfo in directory for description")
-        parser.add_argument('-k', '--keywords', nargs='*', required=False, help="Add comma seperated keywords e.g. 'keyword, keyword2, etc'")
+        parser.add_argument('-k', '--keywords', nargs='*', required=False, help="Add comma separated keywords e.g. 'keyword, keyword2, etc'")
         parser.add_argument('-reg', '--region', nargs='*', required=False, help="Region for discs")
         parser.add_argument('-a', '--anon', action='store_true', required=False, help="Upload anonymously")
         parser.add_argument('-st', '--stream', action='store_true', required=False, help="Stream Optimized Upload")
@@ -77,26 +76,28 @@ class Args():
         parser.add_argument('-qbt', '--qbit-tag', dest='qbit_tag', nargs='*', required=False, help="Add to qbit with this tag")
         parser.add_argument('-qbc', '--qbit-cat', dest='qbit_cat', nargs='*', required=False, help="Add to qbit with this category")
         parser.add_argument('-rtl', '--rtorrent-label', dest='rtorrent_label', nargs='*', required=False, help="Add to rtorrent with this label")
-        parser.add_argument('-tk', '--trackers', nargs='*', required=False, help="Upload to these trackers, space seperated (--trackers blu bhd)")
+        parser.add_argument('-tk', '--trackers', nargs='*', required=False, help="Upload to these trackers, space separated (--trackers blu bhd)")
         parser.add_argument('-rt', '--randomized', nargs='*', required=False, help="Number of extra, torrents with random infohash", default=0)
         parser.add_argument('-aq', '--auto-queue', dest='auto_queue', help="Automatically queue files in a directory")
         parser.add_argument('-sq', '--show-queue', dest='show_queue', action='store_true', required=False, help="Show the list of queued files")
         parser.add_argument('-delay', '--delay', dest='delay', type=int, help='Delay between queued torrents in seconds')
-        parser.add_argument('-random', '--random', action='store_true', required=False, help="Ranzomize queue order")        
+        parser.add_argument('-random', '--random', action='store_true', required=False, help="Randomize queue order")        
         parser.add_argument('-fa', '--full-auto', dest='full_auto', nargs='?', const=True, default=False, type=str, help=argparse.SUPPRESS)
         parser.add_argument('-ua', '--unattended', action='store_true', required=False, help=argparse.SUPPRESS)
         parser.add_argument('-vs', '--vapoursynth', action='store_true', required=False, help="Use vapoursynth for screens (requires vs install)")
         parser.add_argument('-cleanup', '--cleanup', action='store_true', required=False, help="Clean up tmp directory")
         parser.add_argument('-reconfig', '--reconfig', action='store_true', required=False, help="Auto Update Config")        
         parser.add_argument('-fl', '--freeleech', nargs='*', required=False, help="Freeleech Percentage", default=0, dest="freeleech")
-        args, before_args = parser.parse_known_args(input)
-        args = vars(args)
-        # console.print(args)
 
+        args, before_args = parser.parse_known_args(oldArgs)
+        args = vars(args)
+
+        # Handle full auto mode
         if args.get('full_auto', False):
             args['unattended'] = args['auto_desc'] = True 
             args['auto_queue'] = args['full_auto']
 
+        # Handle cases where path is not found initially
         if len(before_args) >= 1 and not os.path.exists(' '.join(args['path'])):
             for each in before_args:
                 args['path'].append(each)
@@ -107,8 +108,11 @@ class Args():
                     else:
                         break
         
-        if meta.get('tmdb_manual') != None or meta.get('imdb') != None:
+        # Reset manual TMDb and IMDb fields
+        if meta.get('tmdb_manual') or meta.get('imdb'):
             meta['tmdb_manual'] = meta['imdb'] = None
+
+        # Process each argument and update the meta dictionary
         for key in args:
             value = args.get(key)
             if value not in (None, []):
@@ -134,7 +138,7 @@ class Args():
                             try:
                                 meta['ptp'] = urllib.parse.parse_qs(parsed.query)['torrentid'][0]
                             except:
-                                console.print('[red]Your terminal ate  part of the url, please surround in quotes next time, or pass only the torrentid')
+                                console.print('[red]Your terminal ate part of the url, please surround in quotes next time, or pass only the torrentid')
                                 console.print('[red]Continuing without -ptp')
                         else:
                             meta['ptp'] = value2
@@ -157,41 +161,40 @@ class Args():
                             try:
                                 meta['hdb'] = urllib.parse.parse_qs(parsed.query)['id'][0]
                             except:
-                                console.print('[red]Your terminal ate  part of the url, please surround in quotes next time, or pass only the torrentid')
+                                console.print('[red]Your terminal ate part of the url, please surround in quotes next time, or pass only the torrentid')
                                 console.print('[red]Continuing without -hdb')
                         else:
                             meta['hdb'] = value2
-
                     else:
                         meta[key] = value2
                 else:
                     meta[key] = value
-            elif key in ("manual_edition"):
-                meta[key] = value
-            elif key in ("freeleech"):
-                meta[key] = 100
+            elif key in ("manual_edition", "freeleech"):
+                meta[key] = value if key != "freeleech" else 100
             elif key in ("tag") and value == []:
                 meta[key] = ""
             else:
                 meta[key] = meta.get(key, None)
             if key in ('trackers'):
                 meta[key] = value
-            # if key == 'help' and value == True:
-                # parser.print_help()
+
         return meta, parser, before_args
 
-
     def list_to_string(self, list):
+        """
+        Converts a list of strings into a single string.
+        """
         if len(list) == 1:
             return str(list[0])
         try:
-            result = " ".join(list)
+            return " ".join(list)
         except:
-            result = "None"
-        return result
-
+            return "None"
 
     def parse_tmdb_id(self, id, category):
+        """
+        Parse the TMDb ID and determine the category (TV or Movie).
+        """
         id = id.lower().lstrip()
         if id.startswith('tv'):
             id = id.split('/')[1]
@@ -199,21 +202,4 @@ class Args():
         elif id.startswith('movie'):
             id = id.split('/')[1]
             category = 'MOVIE'
-        else:
-            id = id
         return category, id
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

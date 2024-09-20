@@ -83,7 +83,7 @@ class COMMON():
                     web_url = images[each]['web_url']
                     raw_url = images[each]['raw_url']
                     img_size = self.config["DEFAULT"]["img_size"]
-                    descfile.write(f"[url={web_url}][img={img_size}]{raw_url}[/img][/url]")
+                    descfile.write(f"[url={web_url}][img={img_size}]{raw_url}[/img][/url] ")
                     if img_size and inline_imgs:
                         try:
                             inline_imgs = int(inline_imgs) 
